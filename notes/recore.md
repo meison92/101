@@ -9,6 +9,12 @@ kubernetes 一个开源容器编排系统  服务网格
 go语言基础示例代码： https://github.com/cncamp/golang
 
 
+### 安装k8s
+[installk8s](./installk8s.md)  
+[installk8s-network](./installk8s.md#network)  
+[installk8s-firewall](./installk8s.md#firewall)  
+
+
 ### 第一天作业：
 思考题：容器的缺点
 实验题cgroup使用实例-使用memory进行限制
@@ -65,9 +71,12 @@ apply会去apiserver对比当前存在的这个对象的版本和本地通过-f�
 ```
 
 #### kubelet
-kubelet启动时可以设置 kubeconfig=<config-path>,
+kubelet启动时可以设置 kubeconfig=\<configfile-path\>  
+比如：
+/usr/bin/kubelet --bootstrap-kubeconfig=/etc/kubernetes/kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf --config=/var/lib/kubelet/config.yaml --network-p....infra-container-image=registry.aliyuncs.com/google_containers/pause:3.2
+
 里面可以设置 staticPodPath: /etc/kubernetes/manifests 文件夹，里面放置pod配置文件来给kubelet来加载pod。比如
-etcd.ymal kube-apiserver.yaml kube-controller-manager.ymal kube-scheduler.ymal
+etcd.ymal kube-apiserver.yaml kube-controller-manager.ymal kube-scheduler.ymal 来自[https://github.com/kubernetes](https://github.com/kubernetes/kubernetes/tree/master/test/fixtures/doc-yaml/admin/high-availability)
 
 
 #### 查看pod:
