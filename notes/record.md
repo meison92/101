@@ -8,6 +8,8 @@ kubernetes 一个开源容器编排系统  服务网格
 
 go语言基础示例代码： https://github.com/cncamp/golang
 
+[youtube教程](https://www.youtube.com/playlist?list=PL_Ykv8s0HisvJ8B5gf9Yu27j0QWzQ0Gff)
+[官方文档](https://kubernetes.io/docs/tasks/)
 
 ### 安装k8s
 [installk8s](./installk8s.md)  

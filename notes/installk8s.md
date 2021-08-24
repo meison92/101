@@ -57,7 +57,7 @@ swap，这个当内存不足时，linux会自动使用swap，将部分内存数�
 
 ## install
 [Ubuntu下安装kubernetes实践](https://blog.csdn.net/pzyyyyy/article/details/104396710)  
-[Kubernetes 基于 ubuntu18.04 手工部署 (k8s)](https://www.cnblogs.com/xiaoxuebiye/p/11256292.html)
+[Kubernetes 基于 ubuntu18.04 手工部署 (k8s)](https://www.cnblogs.com/xiaoxuebiye/p/11256292.html)  
 [我的k8s随笔：Kubernetes 1.17.0 部署讲解](https://latelee.blog.csdn.net/article/details/103774072)
 
 ```
@@ -79,18 +79,15 @@ sudo apt install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 ```
 
-
-kubectl version --client 查看版本
-
 #### coredns问题
-```
+```bash
 # docker pull registry.aliyuncs.com/google_containers/coredns:<version>
 # docker tag registry.aliyuncs.com/google_containers/coredns:<version> k8s.gcr.io/coredns:v<version>
 # docker rmi registry.aliyuncs.com/google_containers/coredns:<version>
 ```
 
 #### 获取部署所需的镜像版本
-```
+```bash
 kubeadm config images list
 kubeadm config images list --kubernetes-version=v1.22.1
 拉取镜像
@@ -100,15 +97,20 @@ kubeadm config images pull
 
 
 ## start
-```
+```bash
+bashkubectl version --client 查看版本
+
 kubeadm init \
  --image-repository registry.aliyuncs.com/google_containers \
  --kubernetes-version v1.22.1 \
  --apiserver-advertise-address=10.64.4.50 \
+ --pod-network-cidr 10.244.0.0/16 \
  --ignore-preflight-errors=all --v=6
+
+ kubeadm init  --image-repository registry.aliyuncs.com/google_containers  --kubernetes-version v1.22.1  --apiserver-advertise-address=10.64.4.50 --pod-network-cidr 10.244.0.0/16 --ignore-preflight-errors=all --v=6
 ```
 ## Post run
-```
+```bash
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
@@ -116,7 +118,39 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 export KUBECONFIG=/etc/kubernetes/admin.conf
 ```
 
+## untaint master
+```bash
+kubectl taint nodes --all node-role.kubernetes.io/master-
+```
 
+### 新建一个nginx的deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx1
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+          app: nginx2
+  template:
+    metadata:
+      labels:
+        app: nginx2
+    spec:
+      containers:
+        - name: nginx3
+          image: nginx
+
+### 安装calico
+kubectl apply -f https://docs.projectcalico.org/v3.6/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
+kubectl apply -f https://git.io/weave-kube-1.6
+
+## 重置kubeadm
+```bash
+kubeadm reset
+```
 
 ### 问题：
 在安装kubernetes的过程中，会出现
@@ -207,15 +241,42 @@ cat >/etc/sysconfig/kubelet<<EOF
 KUBELET_EXTRA_ARGS="--cgroup-driver=$DOCKER_CGROUPS --pod-infra-container-image=registry.cn-hangzhou.aliyuncs.com/google_containers/pause-amd64:3.1"
 EOF
 
-# 启动
+### 启动
 $ systemctl daemon-reload
 $ systemctl enable kubelet && systemctl restart kubelet
 ```
+
+### ymal检测
+https://www.bejson.com/validators/yaml_editor/
 
 
 再次执行kubeadm init时，我发现kubeadm将cgroupDriver的配置到了`/var/lib/kubelet/kubeadm-flags.env`
 后续检查/var/lib/kubelet/config.yaml 发现，里边已经被新的配置替换掉了；
 
 
-### 问题：
+### 问题
 [K8S线上集群排查，实测排查Node节点NotReady异常状态](https://www.cnblogs.com/fenjyang/p/14417494.html)
+
+### 问题
+The connection to the server localhost:8080 was refused - did you specify the right host or port?
+原因：kubernetes master没有与本机绑定，集群初始化的时候没有绑定，此时设置在本机的环境变量即可解决问题。
+echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> /etc/profile
+
+### 问题
+cni.go:239] "Unable to update cni config" err="no networks found in /etc/cni/net.d"
+kubelet.go:2332] "Container runtime network not ready" networkReady="NetworkReady=false reason:NetworkPluginNotReady message:docker: network plugin is not ready: cni config uninitialized"
+解：
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+
+### 问题
+Kubernetes 之 Nameserver limits were exceeded  
+[解：](https://www.cnblogs.com/cuishuai/p/10980852.html)
+检查/etc/resolv.conf里面的nameserver肯定超过3个
+
+当然一般被忽略掉的那个nameserver不影响服务使用的话，可以不作为紧急处理。
+
+可以在kubelet设置一个kubermetes专用的resolv.conf文件，保证kubernetes使用到的nameserver不超过三个，这样就可以解决。
+在/var/lib/kubelet路径下，修改config.yaml
+resolvConf: /etc/resolv.conf
+重启kubelet生效。
