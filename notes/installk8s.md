@@ -133,7 +133,7 @@ spec:
   replicas: 3
   selector:
     matchLabels:
-          app: nginx2
+      app: nginx2
   template:
     metadata:
       labels:
@@ -142,6 +142,29 @@ spec:
       containers:
         - name: nginx3
           image: nginx
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpserver
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: httpserver
+    spec:
+      containers:
+      -name: cncamp/httpserver:v1.0
+       image: httpserver
+
+
+
 
 ### 安装calico
 kubectl apply -f https://docs.projectcalico.org/v3.6/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
