@@ -73,7 +73,7 @@ apply会去apiserver对比当前存在的这个对象的版本和本地通过-f�
 #### kubelet
 kubelet启动时可以设置 kubeconfig=\<configfile-path\>  
 比如：
-/usr/bin/kubelet --bootstrap-kubeconfig=/etc/kubernetes/kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf --config=/var/lib/kubelet/config.yaml --network-p....infra-container-image=registry.aliyuncs.com/google_containers/pause:3.2
+/usr/bin/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf --config=/var/lib/kubelet/config.yaml --network-plugin=cni --pod-infra-container-image=registry.aliyuncs.com/google_containers/pause:3.5
 
 里面可以设置 staticPodPath: /etc/kubernetes/manifests 文件夹，里面放置pod配置文件来给kubelet来加载pod。比如
 etcd.ymal kube-apiserver.yaml kube-controller-manager.ymal kube-scheduler.ymal 来自[https://github.com/kubernetes](https://github.com/kubernetes/kubernetes/tree/master/test/fixtures/doc-yaml/admin/high-availability)
@@ -82,6 +82,10 @@ etcd.ymal kube-apiserver.yaml kube-controller-manager.ymal kube-scheduler.ymal �
 #### 查看pod:
 ```
 kubectl get po
+查看所有namespace的pod:
+kubectl get pod --all-namespaces
+查看制定namespace的pod:
+kubectl get pod -n kube-system
 查看所有Pod:
 kubectl get pods -A
 以wide格式显示：
@@ -95,6 +99,7 @@ kubectl get po --show-labels
 kubectl get po -l run=nginx
 查看所有pod:
 kubectl get pods -A
+
 
 查看特定命名空间的Pod Namespace为liusy下的Pod
 kubectl get pods -n liusy
