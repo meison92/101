@@ -243,26 +243,17 @@ wget https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.1/aio/deploy/re
 [kubernetes优雅停止](https://segmentfault.com/a/1190000023774462)
 ```bash
 关机过程
-0.node节点
+0.针对node节点
 systemctl stop kube-proxy
 systemctl stop kubelet
-
-1.master
+systemctl stop flanneld
 systemctl stop kube-scheduler
 systemctl stop kube-controller-manager
 systemctl stop kube-apiserver
-
-2.关闭 node节点的flanneld 服务
-systemctl stop flanneld
-
-3.全部节点关闭etcd
 systemctl stop etcd
-systemctl stop docker
 
-4.全部关机
+2.全部关机
 init 0
-
- 貌似调用 kubeadm reset 也可以reset
 
 开机过程
 systemctl start etcd  三节点
@@ -273,7 +264,10 @@ systemctl start kube-controller-manager （默认设置了开机启动， master
 systemctl start kubelet（node 节点）
 systemctl start kube-proxy（node 节点）
 ```
-
+貌似调用  
+systemctl stop kubelet  
+kubeadm reset  
+就可以停止所有kubelet相关进程了.  
 
 ### 安装calico
 ```bash
