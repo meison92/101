@@ -194,7 +194,7 @@ cd golang/httpserver/ && make push
 kubectl create -f httpserver.yaml
 kubectl get po -owide　获取httpserver的ip地址．
 
-curl <httpserver-ip>
+curl <httpserver-ip> 或者 curl <httpserver-ip>?user=<user-name>
 
 ```
 最简单的nginx pod:
