@@ -188,6 +188,8 @@ spec:
        image: httpserver
 
 
+注： cncamp 为别人的dockerhub_name
+
 使用：
 git clone https://github.com/cncamp/golang
 cd golang/httpserver/ && make push
@@ -293,9 +295,14 @@ Cgroup Driver: `systemd`
 ```vim
 {
 
-  "exec-opts": ["native.cgroupdriver=systemd"]
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "registry-mirrors": ["https://alzgoonw.mirror.aliyuncs.com"]
 
 }
+或
+"registry-mirrors":["https://docker.mirrors.ustc.edu.cn"]
+镜像解释：
+由于国内访问直接访问docker hub网速比较慢，拉取镜像的时间就会比较长。一般我们会使用镜像加速或者直接从国内的一些平台镜像仓库上拉取。
 ```
 
 重启docker:
