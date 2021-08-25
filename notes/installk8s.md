@@ -58,9 +58,10 @@ swap，这个当内存不足时，linux会自动使用swap，将部分内存数�
 ## install
 [Ubuntu下安装kubernetes实践](https://blog.csdn.net/pzyyyyy/article/details/104396710)  
 [Kubernetes 基于 ubuntu18.04 手工部署 (k8s)](https://www.cnblogs.com/xiaoxuebiye/p/11256292.html)  
-[我的k8s随笔：Kubernetes 1.17.0 部署讲解](https://latelee.blog.csdn.net/article/details/103774072)
+[我的k8s随笔：Kubernetes 1.17.0 部署讲解](https://latelee.blog.csdn.net/article/details/103774072)  
+[Ｂ站部署视频](https://www.bilibili.com/video/BV1tJ411N7Zx?from=search&seid=12454234905975326572)
 
-```
+```vim
 /etc/apt/sources.list 添加
 deb https://mirrors.aliyun.com/kubernetes/apt kubernetes-xenial main
 或
@@ -81,9 +82,9 @@ sudo apt-mark hold kubelet kubeadm kubectl
 
 #### coredns问题
 ```bash
-# docker pull registry.aliyuncs.com/google_containers/coredns:<version>
-# docker tag registry.aliyuncs.com/google_containers/coredns:<version> k8s.gcr.io/coredns:v<version>
-# docker rmi registry.aliyuncs.com/google_containers/coredns:<version>
+docker pull registry.aliyuncs.com/google_containers/coredns:<version>
+docker tag registry.aliyuncs.com/google_containers/coredns:<version> k8s.gcr.io/coredns:v<version>
+docker rmi registry.aliyuncs.com/google_containers/coredns:<version>
 ```
 
 #### 获取部署所需的镜像版本
@@ -94,20 +95,32 @@ kubeadm config images list --kubernetes-version=v1.22.1
 kubeadm config images pull
 ```
 
-
-
 ## start
 ```bash
 bashkubectl version --client 查看版本
 
-kubeadm init \
- --image-repository registry.aliyuncs.com/google_containers \
- --kubernetes-version v1.22.1 \
+kubeadm init --kubernetes-version=v1.22.1 \
  --apiserver-advertise-address=10.64.4.50 \
- --pod-network-cidr 10.244.0.0/16 \
+ --image-repository registry.aliyuncs.com/google_containers \
+ --service-cidr=10.96.0.0/12
+ --pod-network-cidr=10.244.0.0/16 \
  --ignore-preflight-errors=all --v=6
 
- kubeadm init  --image-repository registry.aliyuncs.com/google_containers  --kubernetes-version v1.22.1  --apiserver-advertise-address=10.64.4.50 --pod-network-cidr 10.244.0.0/16 --ignore-preflight-errors=all --v=6
+ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+```
+
+| Syntax      | Description |
+| ----------- | ----------- |
+|--kubernetes-version=v1.22.1| 这个参数是下载的k8s软件版本号 |
+| --apiserver-advertise-address=10.64.4.50 | 这个参数就是master主机的IP地址，例如我的Master主机的IP是：10.64.4.50 |
+| --image-repository=registry.aliyuncs.com/google_containers | 这个是镜像地址，由于国外地址无法访问，故使用的阿里云仓库地址：registry.aliyuncs.com/google_containers |
+| --service-cidr=10.96.0.0/12 | 用于指定为Service分配使用的网络地址，它由kubernetes管理，默认即为10.96.0.0/12 |
+| --pod-network-cidr=10.244.0.0/16 | 用于指定分Pod分配使用的网络地址，它通常应该与要部署使用的网络插件（例如flannel、calico等）的默认设定保持一致，10.244.0.0/16是flannel默认使用的网络.<br> flannel定义在　https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml |
+
+
+## 重置kubeadm
+```bash
+kubeadm reset
 ```
 ## Post run
 ```bash
@@ -124,6 +137,7 @@ kubectl taint nodes --all node-role.kubernetes.io/master-
 ```
 
 ### 新建一个nginx的deployment
+```vim nginx.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -144,6 +158,16 @@ spec:
           image: nginx
 
 
+使用：
+kubectl create -f httpserver.yaml
+kubectl get po -owide
+curl <nginx-ip>
+
+之后可能要配一个service，来做一个负载均衡．
+```
+
+
+```vim httpserver.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -164,15 +188,97 @@ spec:
        image: httpserver
 
 
+使用：
+git clone https://github.com/cncamp/golang
+cd golang/httpserver/ && make push
+kubectl create -f httpserver.yaml
+kubectl get po -owide　获取httpserver的ip地址．
+
+curl <httpserver-ip>
+
+```
+最简单的nginx pod:
+```vim　pod_nginx.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 80
+
+使用：
+kubectl create -f　pod_nginx.yaml
+```
+
+
+## 配置节点
+主节点主机运行以下命令，得到次节点的加入命令
+```bash
+kubeadm token create --print-join-command
+```
+次节点运行
+```
+ kubeadm join 10.64.4.50:6443 --token nfka8w.17au4y3uny5qosti --discovery-token-ca-cert-hash sha256:c70fbf25f2d19035c311e1d1f75cad1ee2ad0bae3c2c21debf7a11ad39f7295a
+```
+在主节点上获取所有pods，并按照node排序
+```bash
+kubectl get pods -A -o wide --sort-by="{.spec.nodeName}"
+```
+
+## 安装dashboard
+
+[K8s安装dashboard](https://www.cnblogs.com/bigberg/p/13469736.html)
+```bash
+wget https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.1/aio/deploy/recommended.yaml
+```
+
+
+## stop k8s
+[kubernetes优雅停止](https://segmentfault.com/a/1190000023774462)
+```bash
+关机过程
+0.node节点
+systemctl stop kube-proxy
+systemctl stop kubelet
+
+1.master
+systemctl stop kube-scheduler
+systemctl stop kube-controller-manager
+systemctl stop kube-apiserver
+
+2.关闭 node节点的flanneld 服务
+systemctl stop flanneld
+
+3.全部节点关闭etcd
+systemctl stop etcd
+systemctl stop docker
+
+4.全部关机
+init 0
+
+ 貌似调用 kubeadm reset 也可以reset
+
+开机过程
+systemctl start etcd  三节点
+systemctl start flanneld （node 节点）
+systemctl start kube-apiserver  (默认设置了开机启动， master 节点)
+systemctl start kube-scheduler （默认设置了开机启动， master 节点）
+systemctl start kube-controller-manager （默认设置了开机启动， master 节点）
+systemctl start kubelet（node 节点）
+systemctl start kube-proxy（node 节点）
+```
 
 
 ### 安装calico
+```bash
 kubectl apply -f https://docs.projectcalico.org/v3.6/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
 kubectl apply -f https://git.io/weave-kube-1.6
-
-## 重置kubeadm
-```bash
-kubeadm reset
 ```
 
 ### 问题：
@@ -257,7 +363,7 @@ $ systemctl daemon-reload
 $ systemctl enable kubelet && systemctl restart kubelet
 ```
 或者：
-```
+```bash
 DOCKER_CGROUPS=$(docker info | grep 'Cgroup' | cut -d' ' -f3)
 echo $DOCKER_CGROUPS
 cat >/etc/sysconfig/kubelet<<EOF

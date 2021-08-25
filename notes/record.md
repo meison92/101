@@ -1,21 +1,18 @@
 
 
 ### 预习：
-kubernetes 一个开源容器编排系统  服务网格
-安装本地k8s环境： https://pouncing-waterfall-7c4.notion.site/k8s-ccd8ac1710d24af98e0c33489fae722c
+kubernetes 一个开源容器编排系统  服务网格  
+[安装本地k8s环境](https://pouncing-waterfall-7c4.notion.site/k8s-ccd8ac1710d24af98e0c33489fae722c)  
+[安装好docker和k8s,选一种合适的](https://github.com/cncamp/101)
+[go语言基础示例代码](https://github.com/cncamp/golang)
 
-希望能安装好docker和k8s的同学，可以参考我放在github上安装环境的文档，选一种适合你的：https://github.com/cncamp/101
 
-go语言基础示例代码： https://github.com/cncamp/golang
-
-[youtube教程](https://www.youtube.com/playlist?list=PL_Ykv8s0HisvJ8B5gf9Yu27j0QWzQ0Gff)
+[youtube教程](https://www.youtube.com/playlist?list=PL_Ykv8s0HisvJ8B5gf9Yu27j0QWzQ0Gff)  
 [官方文档](https://kubernetes.io/docs/tasks/)
 
 ### 安装k8s
 [installk8s](./installk8s.md)  
-[installk8s-network](./installk8s.md#network)  
-[installk8s-firewall](./installk8s.md#firewall)  
-
+[installk8s-install](./installk8s.md#install)  
 
 ### 第一天作业：
 思考题：容器的缺点
@@ -61,7 +58,7 @@ K3S 是 K8S的弱化版本。
 [k8s通过yaml创建pod_K8S基本使用](https://blog.csdn.net/weixin_42518709/article/details/112434245)
 
 根据ymal创建一个pod： 
-```
+```bash
 kubectl create -f httpserver.yaml
 打印Verbose Log:
 kubectl create -f httpserver.yaml -v 9
@@ -81,8 +78,17 @@ kubelet启动时可以设置 kubeconfig=\<configfile-path\>
 etcd.ymal kube-apiserver.yaml kube-controller-manager.ymal kube-scheduler.ymal 来自[https://github.com/kubernetes](https://github.com/kubernetes/kubernetes/tree/master/test/fixtures/doc-yaml/admin/high-availability)
 
 
-#### 查看pod:
+####　常用命令
+```bash
+kubectl get - 列出资源
+kubectl describe - 显示有关资源的详细信息
+kubectl logs - 打印 pod 和其中容器的日志
+kubectl exec - 在 pod 中的容器上执行命令
 ```
+
+
+#### 查看pod:
+```bash
 kubectl get po
 查看所有namespace的pod:
 kubectl get pod --all-namespaces
@@ -99,6 +105,8 @@ kubectl get po -o=ymal
 kubectl get po --show-labels
 指定label查询：
 kubectl get po -l run=nginx
+    这里可能要改成：
+    kubectl get po -l run=nginx
 查看所有pod:
 kubectl get pods -A
 
@@ -111,43 +119,50 @@ kubectl get pods --namespace liusy
 ![pod-format](images/pods-format.png)
 
 #### 监听pod变化
+```bash
 kubectl get po -w
+```
 
 #### 删除一个pod
-```
+```bash
 kubectl delete po <pod-name>
 或如果使用yaml文件创建，也可以使用yaml文件删除：
 kubectl delete -f nginx-service.yaml
 ```
 
 #### 给pod添加一个annotations:
-```
+```bash
 kubectl annotate po <pod-name> string=string
 ```
 
 #### 更新pod-提高高可用，冗余部署，创建3个nginx实例：
+```bash
 kubectl scale deploy nginx --replicas=3
+```
 ![nginx-pods](images/nginx-pods.png)
 
 #### kubernetes提供了一个对象:Service，避免用户直接指定访问某一个nginx对象,从而达到负载均衡，得到高可用的一个保证。
 service用来做负载均衡的对象
-
-
+导出一个service:
+```bash
+kubectl expose deployment nginx --port=80 --type=ClusterIP
+kubectl expose deployment nginx --port=80 --type=NodePort
+```
 
 查看service:
-```
+```bash
 kubectl get svc
 或
 kubectl get service
 ```
 
 编辑service:
-```
+```bash
 kubectl edit svc <service-name>
 ```
 
 监控service:
-```
+```bash
 kubecto get svc -w -v 9
 ```
 
@@ -155,7 +170,7 @@ kubecto get svc -w -v 9
 
 
 #### 查看Note
-```
+```bash
 kubectl note -oyaml
 ```
 ![deployment](images/deployment-replicaSet.png)
@@ -164,24 +179,24 @@ kubectl note -oyaml
 deployment的yaml文件里的kind为deployment
 
 #### 创建/更新pod成deployment，并形成一个service
-```
+```bash
 kubectl scale deploy nginx ---replicas=<num>
 ```
 
 #### 获取deployment
-```
+```bash
 kubectl get deploy
 ```
 
 #### 编辑deploypent
-```
+```bash
 kubectl edit deploy <deploy-name>
 或更新
 kubectl scale deploy <deploy-name> --replicas=<num>
 ```
 
 #### 查看deploy发生过什么
-```
+```bash
 kubectl describe deploy <deploy-name>
 或查看deployment详细的信息
 kubectl get deploy <deploy-name> -oymal
@@ -189,32 +204,32 @@ kubectl get deploy <deploy-name> -oymal
 
 #### 查看ReplicaSet
 通过deployment里的templat建一个hash值。以这个hash值建立replicaSet
-```
+```bash
 kubectl get rs <replicaSet>
 kubectl get rs <replicaSet> -oymal
 kubectl descript rs <replicaSet>
 ```
 
 #### 查看某个资源的详细信息
-```
+```bash
 kubectl describe 资源类型 资源名称
 或
 kubectl describe 资源类型/资源名称
 ```
 
 #### 查看某个资源的日志
-```
+```bash
 kubectl logs 资源类型 资源名称
 或
 kubectl logs 资源类型/资源名称
 ```
 
 #### 跟踪查看容器的日志，相当于tail -f命令
-```
+```bash
 kubectl logs -f <pod-name> -c <container-name>
 ```
 
 #### 删除拥有某个Label的资源
-```
+```bash
 kubectl delete 资源类型 -l name=<label-name>
 ```
