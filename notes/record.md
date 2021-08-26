@@ -86,6 +86,10 @@ kubectl logs - 打印 pod 和其中容器的日志
 kubectl exec - 在 pod 中的容器上执行命令
 ```
 
+#### 查看集群信息
+```bash
+kubectl get cs
+```
 
 #### 查看pod:
 ```bash
